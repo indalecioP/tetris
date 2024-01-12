@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>  
+  <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+  <audio id='tetrisMp3' src="tetris.mp3"></audio>
+  <div class="container">
+    <div class="center">
+      <button class='start' onclick="start()">start</button>
+      <button onclick="tMusic()">toggle music</button>
+    </div>
+    <div class="medio">
+      <h1>TETRIS</h1>
+      <canvas></canvas>
+    </div>
+    <div class="center">
+      <button id="displayScore">Score : 0</button>
+    </div>
+  </div>
+  <script>
+    let score = 0
+    let canvas = document.querySelector('canvas')
+    let context = canvas.getContext('2d')
+    let block = 25
+    let bordW = 12
+    let boardH = 18
+    canvas.width = block * bordW
+    canvas.height = block * boardH
+    let coli = []
+    const colors = ['', 'yellow', 'green', 'orange', 'grey', 'red']
+    const colors2 = ['', '#333', '#444', 'salmon', 'lightgrey', 'tomato']
+    let board;
+    context.scale(block, block)
+
+    function bor() {
+      board = Array(boardH).fill(0).map((f, i) =>
+        i == 0 || i == 17
+          ? Array(bordW).fill(5)
+          : Array(bordW).fill(0)
+      )
+    }
+
+    console.log(board)
+    let piece = {
+      position: { i: 1, i2: 0 },
+      shape: [
+        [1, 0, 0],
+        [1, 1, 0],
+        [1, 0, 0]
+      ]
+    }
+
+    let ele = [
+      [2, 0, 0],
+      [2, 0, 0],
+      [2, 2, 2],
+    ]
+
+    let eleCorta = [
+      [3, 0, 0],
+      [3, 0, 0],
+      [3, 3, 0],
+    ]
+    let ele2 = [
+      [4, 0],
+      [4, 4]
+    ]
+
+    formas = [piece.shape, ele, eleCorta, ele2]
+    let empezar;
+    function start() {
+      tetrisMp3.play()
+      bor()
+      empezar = setInterval(() => {
+        console.log('a')
+        down()
+      }, 600);
+    }
+
+    function tMusic() {
+      tetrisMp3.paused ? tetrisMp3.play() : tetrisMp3.pause()
+    }
+
+    function intialBoard() {
+      bor()
+      context.fillStyle = '#000'
+      context.fillRect(0, 0, bordW, boardH)
+      board[0].forEach((e, i) => {
+        context.fillStyle = colors[e]
+        context.fillRect(i, 0, 1, 1)
+        context.fillRect(i, boardH - 1, 1, 1)
+        context.fillStyle = colors2[e]
+        context.beginPath()
+        context.moveTo(i, 0)
+        context.lineTo(i, 1)
+        context.lineTo(i + 1, 1)
+        context.lineTo(i, 0)
+        context.fill()
+        context.beginPath()
+        context.moveTo(i, boardH - 1)
+        context.lineTo(i, boardH)
+        context.lineTo(i + 1, boardH)
+        context.lineTo(i, boardH - 1)
+        context.fill()
+      })
+    }
+    intialBoard()
+    function draw() {
+      let mayor = 0
+      context.fillStyle = '#000'
+      context.fillRect(0, 0, bordW, boardH)
+      board.forEach((f, i) => {
+        f.forEach((c, i2) => {
+          if (c != 0) {
+            context.fillStyle = colors[c]
+            context.fillRect(i2, i, 1, 1)
+            context.fillStyle = colors2[c]
+            context.beginPath()
+            context.moveTo(i2, i)
+            context.lineTo(i2, i + 1)
+            context.lineTo(i2 + 1, i + 1)
+            context.lineTo(i2, i)
+            context.fill()
+          }
+        })
+      })
+
+      piece.shape.forEach((f, ii) => {
+        f.forEach((c, ii2) => {
+          if (c != 0) {
+            context.fillStyle = colors[c]
+            context.fillRect(piece.position.i2 + ii2, piece.position.i + ii, 1, 1)
+            context.fillStyle = colors2[c]
+            context.beginPath()
+            context.moveTo(piece.position.i2 + ii2, piece.position.i + ii)
+            context.lineTo(piece.position.i2 + ii2, piece.position.i + ii + 1)
+            context.lineTo(piece.position.i2 + ii2 + 1, piece.position.i + ii + 1)
+            context.lineTo(piece.position.i2 + ii2, piece.position.i + ii)
+            context.fill()
+          }
+        })
+      })
+    }
+
+    document.body.addEventListener('keydown', (e) => {
+      if (e.key == 'ArrowRight') {
+        piece.position.i2 += 1
+        const z = () => piece.position.i2 -= 1
+        colico(z)
+
+      }
+      if (e.key == 'ArrowLeft') {
+        piece.position.i2 -= 1
+        const z = () => piece.position.i2 += 1
+        colico(z)
+      }
+      if (e.key == 'ArrowDown') {
+        down()
+      }
+      if (e.key == 'ArrowUp') {
+        piece.position.i -= 1
+        const z = () => piece.position.i += 1
+        colico(z)
+
+      }
+      if (e.key == 'r') {
+        rotar()
+        draw()
+      }
+    })
+
+    function down() {
+      piece.position.i += 1
+      const z = () => {
+        solidificar()
+      }
+      colico(z)
+    }
+
+    function rotar() { // asigno celda por celda
+      let n = []
+      piece.shape.forEach((e, i) => n[i] = [])
+      console.log(n)
+      piece.shape.forEach((f, i) => {
+        f.forEach((col, ci) => {
+          n[(piece.shape.length - 1) - ci][i] = col
+        })
+      })
+      piece.shape = n
+      colicoRotar()
+    }
+
+    function colico(z) {
+      if (piece.shape.every((f, i) => f.every((c, ic) => c != 0 ? board[i + piece.position.i][ic + piece.position.i2] == 0 : c == 0))) {
+        draw()
+      } else {
+        z()
+      }
+    }
+
+    function colicoRotar() {
+      if (piece.shape.every((f, i) => f.every((c, ic) => c != 0 ? board[i + piece.position.i][ic + piece.position.i2] == 0 : c == 0))) {
+        draw()
+      } else {
+        rotar()
+      }
+    }
+
+    function solidificar() {
+      piece.shape.forEach((f, i) => {
+        f.forEach((c, ic) => {
+          if (c != 0) { board[i + piece.position.i - 1][ic + piece.position.i2] = c }
+        })
+      })
+      piece.position.i = 1
+      piece.position.i2 = 0
+      let aleat = Math.floor(Math.random() * (formas.length))
+      piece.shape = formas[aleat]
+      const z = () => {
+        tetrisMp3.pause()
+        alert('fin')
+        clearInterval(empezar)
+      }
+      colico(z)
+      quitarFila()
+      draw()
+    }
+
+    function quitarFila() {
+      board.forEach((f, i) => {
+        if (i != 0 && i != board.length - 1) {
+          if (f.every(e => e != 0)) {
+            console.log(i)
+            board.splice(i, 1)
+            board.unshift(Array(bordW).fill(5))
+            board[1] = [0, 0, 0, 0, 0, 0, 0]
+            score++
+            displayScore.textContent = 'Score : ' + score
+            draw()
+          }
+        }
+      })
+    }
+  </script>
+</body>
+
+</html>
